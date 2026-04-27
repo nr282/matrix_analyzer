@@ -1,3 +1,5 @@
+## Philosophy
+
 The core ideas, philosophy and goals of this codebase is to help AI researchers better
 analyze matricies, and hence exploit their structure.
 
