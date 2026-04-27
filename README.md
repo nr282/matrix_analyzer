@@ -30,3 +30,5 @@ To stress again, GEMM is not fine-tuned for deep learning. It is fine-tuned to a
 
 In order to fine tune, the multiplication of A and B, we must first investigate the structure
 of A and B.
+
+## Goal: Provide Information/Code/Algorithms/Ideas to Top AI Frontier Lab Researchers to Improve Backpropogation.
