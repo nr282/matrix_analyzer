@@ -32,3 +32,6 @@ In order to fine tune, the multiplication of A and B, we must first investigate 
 of A and B.
 
 ## Goal: Provide Information/Code/Algorithms/Ideas to Top AI Frontier Lab Researchers.
+
+The goal of this repository is to provide algorithms, techniques, empirical results, and code that can aid researchers at Top AI labs such 
+as Anthropic or OpenAI
