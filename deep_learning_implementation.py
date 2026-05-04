@@ -296,7 +296,9 @@ if __name__ == "__main__":
 
     print("\nWeight matrix shapes (for matrix analysis):")
     for i, W in enumerate(model.weight_matrices()):
+
         print(f"  Layer {i}: W.shape={W.shape}")
+        print(f"Weight Matrix {W}")
 
     print("\nGradient matrix shapes (after last backward pass):")
     for i, dW in enumerate(model.gradient_matrices()):

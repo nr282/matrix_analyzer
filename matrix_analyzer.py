@@ -39,29 +39,75 @@ One might ask what structure will this repository investigate?
 import numpy as np
 from typing import List, Optional, Tuple, Set
 
-def project_matrix_to_circulant(A: np.array[np.array[float]]):
+
+def project_matrix_to_circulant(A: np.ndarray) -> np.ndarray:
     """
-    Projects matrix A to the nearest in 2 norm circulant matrix.
+    Projects square matrix A to the nearest circulant matrix in the Frobenius norm.
 
-    :param A:
-    :return:
+    A circulant matrix C satisfies C[i,j] = c[(j-i) % n].  The optimal c is
+    obtained by averaging each wrapped diagonal of A:
+        c[k] = mean{ A[i, (i+k) % n]  for i = 0..n-1 }
     """
+    assert A.ndim == 2 and A.shape[0] == A.shape[1], "A must be square"
+    n = A.shape[0]
+    i = np.arange(n)
+    c = np.array([A[i, (i + k) % n].mean() for k in range(n)])
+    row, col = np.ogrid[:n, :n]
+    return c[(col - row) % n]
 
-    pass
 
-def project_matrix_to_nearest_sparse(A: np.array[np.array[float]]):
-    pass
-
-
-def project_matrix_to_nearest_toeplitz(A: np.array[np.array[float]]):
-    pass
-
-def create_covering_for_matricies(matricies: List[np.array[np.array[float]]]):
+def project_matrix_to_nearest_sparse(A: np.ndarray, s: int) -> np.ndarray:
     """
-    The goal is to apply rigorously apply
+    Projects A to the nearest s-sparse matrix in the Frobenius norm.
 
+    Keeps the s entries of largest absolute value and zeros the rest.
     """
+    if s <= 0:
+        return np.zeros_like(A)
+    if s >= A.size:
+        return A.copy()
+    B = np.zeros_like(A)
+    top_s = np.argpartition(np.abs(A).ravel(), -s)[-s:]
+    B.ravel()[top_s] = A.ravel()[top_s]
+    return B
 
-    pass
+
+def project_matrix_to_nearest_toeplitz(A: np.ndarray) -> np.ndarray:
+    """
+    Projects A to the nearest Toeplitz matrix in the Frobenius norm.
+
+    A Toeplitz matrix T satisfies T[i,j] = t[j-i].  The optimal t[d] is the
+    mean of A[i,j] over all (i,j) on diagonal d (where d = j - i).
+    """
+    m, n = A.shape
+    T = np.zeros_like(A)
+    for d in range(-(m - 1), n):
+        rows = np.arange(max(0, -d), min(m, n - d))
+        cols = rows + d
+        avg = A[rows, cols].mean()
+        T[rows, cols] = avg
+    return T
+
+
+def create_covering_for_matricies(
+    matricies: List[np.ndarray],
+    delta: float = 1.0,
+) -> List[np.ndarray]:
+    """
+    Returns a delta-covering of the given matrices under the Frobenius norm.
+
+    Uses a greedy algorithm: repeatedly pick an uncovered matrix as a new
+    center and remove all matrices within Frobenius distance delta of it.
+    """
+    centers: List[np.ndarray] = []
+    uncovered = list(matricies)
+    while uncovered:
+        center = uncovered[0]
+        centers.append(center)
+        uncovered = [
+            M for M in uncovered[1:]
+            if np.linalg.norm(M - center, "fro") > delta
+        ]
+    return centers
 
 
