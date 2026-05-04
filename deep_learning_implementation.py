@@ -328,7 +328,7 @@ if __name__ == "__main__":
 
     for i, W in enumerate(model.weight_matrices()):
         columns = [W[:, j] for j in range(W.shape[1])]
-        for delta in [0.5, 1.0, 2.0, 5.0]:
+        for delta in np.arange(0.5, 12.5, 0.5):
             centers, _ = greedy_set_cover_delta_covering(columns, delta)
             ratio = len(centers) / W.shape[1]
             print(f"{i:<8} {str(W.shape):<14} {delta:<8.1f} {len(centers):<10} {ratio:.1%}")
