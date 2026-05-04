@@ -34,6 +34,32 @@ One might ask what structure will this repository investigate?
     3. What is a covering of a space of X = M(NxN) matricies.
     4. The application of (1),(2),(3) to backpropogation matricies.
 
+Is it possible to use the "Set Cover Problem"? 
+    1. The set cover problem is a classical questoin in combinatorics, computer science,
+    and operations research and complexity theory.
+
+Finding the smallest delta-covering involves selecting the minimum number of sets, each with
+a diameter no greater than delta, such that their union covers the target set. This
+is a classic problem in metric geometry and approximation theory.
+
+1. Understanding the delta-covering
+2. Methods for Finding the smallest delta covering
+3. Complexity and Approximation
+
+
+1. Shifting Strategy
+2. Greedy Set Cover via Discretization
+3. Farthest First Transversal
+
+Greedy Set Cover via Discretization
+    If you are dealing with a finite set of discrete points $X$, you can identify all
+    possible valid $\delta$-balls that contain subsets of $X$. You then run
+    the standard greedy Set Cover algorithm—iteratively picking the $\delta$-ball
+    that covers the highest number of uncovered points.
+    This guarantees an $O(\log n)$ approximation factor.
+
+
+
 """
 
 import numpy as np

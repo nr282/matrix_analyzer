@@ -7,6 +7,7 @@ from matrix_analyzer import (
     project_matrix_to_nearest_toeplitz,
     create_covering_for_matricies,
 )
+from greedy_set_cover import greedy_set_cover_delta_covering, verify_delta_covering
 
 
 class TestProjectToCirculant(unittest.TestCase):
@@ -210,6 +211,84 @@ class TestCreateCovering(unittest.TestCase):
     def test_empty_input(self):
         centers = create_covering_for_matricies([], delta=1.0)
         self.assertEqual(centers, [])
+
+
+class TestGreedySetCover(unittest.TestCase):
+
+    RNG = np.random.default_rng(42)
+
+    def _cluster(self, center, n, noise):
+        return [center + self.RNG.normal(0, noise, center.shape) for _ in range(n)]
+
+    def _three_cluster_matrices(self):
+        c1 = np.zeros((3, 3))
+        c2 = np.eye(3) * 5
+        c3 = np.ones((3, 3)) * 10
+        return self._cluster(c1, 6, 0.3) + self._cluster(c2, 6, 0.3) + self._cluster(c3, 6, 0.3)
+
+    def test_empty_input(self):
+        centers, indices = greedy_set_cover_delta_covering([], delta=1.0)
+        self.assertEqual(centers, [])
+        self.assertEqual(indices, [])
+
+    def test_single_matrix(self):
+        M = np.eye(3)
+        centers, indices = greedy_set_cover_delta_covering([M], delta=1.0)
+        self.assertEqual(len(centers), 1)
+        self.assertEqual(indices, [0])
+
+    def test_identical_matrices_need_one_center(self):
+        mats = [np.eye(4).copy() for _ in range(5)]
+        centers, _ = greedy_set_cover_delta_covering(mats, delta=0.1)
+        self.assertEqual(len(centers), 1)
+
+    def test_covering_is_valid_for_all_deltas(self):
+        mats = self._three_cluster_matrices()
+        for delta in [0.5, 1.0, 2.0, 5.0]:
+            centers, _ = greedy_set_cover_delta_covering(mats, delta)
+            self.assertTrue(
+                verify_delta_covering(mats, centers, delta),
+                f"Covering invalid at delta={delta}",
+            )
+
+    def test_three_clusters_recovered_at_delta_2(self):
+        mats = self._three_cluster_matrices()
+        centers, _ = greedy_set_cover_delta_covering(mats, delta=2.0)
+        self.assertEqual(len(centers), 3)
+
+    def test_tight_delta_needs_all_centers(self):
+        mats = [np.eye(3) * k for k in range(5)]
+        centers, _ = greedy_set_cover_delta_covering(mats, delta=0.1)
+        self.assertEqual(len(centers), len(mats))
+
+    def test_indices_are_valid_and_unique(self):
+        mats = self._three_cluster_matrices()
+        _, indices = greedy_set_cover_delta_covering(mats, delta=2.0)
+        n = len(mats)
+        self.assertTrue(all(0 <= i < n for i in indices))
+        self.assertEqual(len(set(indices)), len(indices))
+
+    def test_centers_match_indexed_matrices(self):
+        mats = self._three_cluster_matrices()
+        centers, indices = greedy_set_cover_delta_covering(mats, delta=2.0)
+        for center, idx in zip(centers, indices):
+            np.testing.assert_array_equal(center, mats[idx])
+
+    def test_larger_delta_fewer_or_equal_centers(self):
+        mats = self._three_cluster_matrices()
+        small, _ = greedy_set_cover_delta_covering(mats, delta=1.0)
+        large, _ = greedy_set_cover_delta_covering(mats, delta=2.0)
+        self.assertLessEqual(len(large), len(small))
+
+    def test_verify_detects_invalid_cover(self):
+        mats = [np.eye(3) * k for k in range(3)]
+        bad_centers = [np.eye(3) * 100]
+        self.assertFalse(verify_delta_covering(mats, bad_centers, delta=1.0))
+
+    def test_non_square_matrices(self):
+        mats = [self.RNG.standard_normal((2, 5)) for _ in range(10)]
+        centers, _ = greedy_set_cover_delta_covering(mats, delta=3.0)
+        self.assertTrue(verify_delta_covering(mats, centers, delta=3.0))
 
 
 if __name__ == "__main__":
