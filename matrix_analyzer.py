@@ -39,7 +39,7 @@ One might ask what structure will this repository investigate?
 import numpy as np
 from typing import List, Optional, Tuple, Set
 
-def project_matrix_to_circulant(A: np.array[np.array[int]]):
+def project_matrix_to_circulant(A: np.array[np.array[float]]):
     """
     Projects matrix A to the nearest in 2 norm circulant matrix.
 
@@ -49,18 +49,17 @@ def project_matrix_to_circulant(A: np.array[np.array[int]]):
 
     pass
 
-def project_matrix_to_nearest_sparse(A: np.array[np.array[int]]):
+def project_matrix_to_nearest_sparse(A: np.array[np.array[float]]):
     pass
 
 
-def project_matrix_to_nearest_toeplitz(A: np.array[np.array[int]]):
+def project_matrix_to_nearest_toeplitz(A: np.array[np.array[float]]):
     pass
 
-def create_covering_for_matricies(matricies: List[np.array[np.array[float]]])):
+def create_covering_for_matricies(matricies: List[np.array[np.array[float]]]):
     """
-    The goal is to apply rigorously apply Wainwright's mathematics.
+    The goal is to apply rigorously apply
 
-    :return:
     """
 
     pass
