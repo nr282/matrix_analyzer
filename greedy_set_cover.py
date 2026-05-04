@@ -80,7 +80,7 @@ def verify_delta_covering(
     delta of at least one center.
     """
     for M in matrices:
-        if not any(np.linalg.norm(M - C, "fro") <= delta for C in centers):
+        if not any(np.linalg.norm((M - C).ravel()) <= delta for C in centers):
             return False
     return True
 

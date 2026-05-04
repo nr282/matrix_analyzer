@@ -1,6 +1,7 @@
 import unittest
 import numpy as np
 
+from deep_learning_implementation import Linear, ReLU, Sequential
 from matrix_analyzer import (
     project_matrix_to_circulant,
     project_matrix_to_nearest_sparse,
@@ -289,6 +290,105 @@ class TestGreedySetCover(unittest.TestCase):
         mats = [self.RNG.standard_normal((2, 5)) for _ in range(10)]
         centers, _ = greedy_set_cover_delta_covering(mats, delta=3.0)
         self.assertTrue(verify_delta_covering(mats, centers, delta=3.0))
+
+
+class TestSetCoverOnWeightMatrices(unittest.TestCase):
+    """
+    Tests for applying greedy set cover to the columns of neural-network
+    weight matrices. Each column is the weight vector for one output neuron;
+    the covering size measures how many distinct prototype directions are
+    needed to represent all neurons at a given radius.
+    """
+
+    def _make_model(self):
+        return Sequential([
+            Linear(10, 16, seed=0),
+            ReLU(),
+            Linear(16, 8, seed=1),
+            ReLU(),
+            Linear(8, 2, seed=2),
+        ])
+
+    @staticmethod
+    def _columns(W: np.ndarray) -> list:
+        return [W[:, j] for j in range(W.shape[1])]
+
+    def test_covering_valid_for_every_layer_and_delta(self):
+        model = self._make_model()
+        for W in model.weight_matrices():
+            cols = self._columns(W)
+            for delta in np.arange(0.5, 6.0, 0.5):
+                centers, _ = greedy_set_cover_delta_covering(cols, delta)
+                self.assertTrue(
+                    verify_delta_covering(cols, centers, delta),
+                    f"Invalid covering: W.shape={W.shape}, delta={delta:.1f}",
+                )
+
+    def test_center_count_bounded_by_column_count(self):
+        model = self._make_model()
+        for W in model.weight_matrices():
+            cols = self._columns(W)
+            for delta in [0.5, 2.0, 5.0]:
+                centers, _ = greedy_set_cover_delta_covering(cols, delta)
+                self.assertLessEqual(len(centers), W.shape[1])
+
+    def test_monotone_in_delta(self):
+        model = self._make_model()
+        for W in model.weight_matrices():
+            cols = self._columns(W)
+            deltas = np.arange(0.5, 6.0, 0.5)
+            counts = [
+                len(greedy_set_cover_delta_covering(cols, d)[0])
+                for d in deltas
+            ]
+            for a, b in zip(counts, counts[1:]):
+                self.assertLessEqual(b, a,
+                    f"Center count increased as delta grew: W.shape={W.shape}")
+
+    def test_large_delta_collapses_to_one_center(self):
+        # At a sufficiently large radius every column is within one ball
+        model = self._make_model()
+        for W in model.weight_matrices():
+            cols = self._columns(W)
+            max_norm = max(np.linalg.norm(c) for c in cols)
+            centers, _ = greedy_set_cover_delta_covering(cols, delta=max_norm * 3)
+            self.assertEqual(len(centers), 1,
+                f"Expected 1 center at huge delta, got {len(centers)} for W.shape={W.shape}")
+
+    def test_zero_noise_identical_columns_need_one_center(self):
+        # A weight matrix whose columns are all identical compresses to 1 center
+        W = np.tile(np.array([1.0, 2.0, 3.0, 4.0])[:, None], (1, 12))
+        cols = self._columns(W)
+        centers, _ = greedy_set_cover_delta_covering(cols, delta=0.01)
+        self.assertEqual(len(centers), 1)
+
+    def test_two_cluster_columns_recovered(self):
+        # Columns split into two tight clusters well-separated in Frobenius distance
+        rng = np.random.default_rng(7)
+        cluster_a = [rng.normal(0, 0.05, 8) for _ in range(10)]
+        cluster_b = [rng.normal(10, 0.05, 8) for _ in range(10)]
+        cols = cluster_a + cluster_b
+        centers, _ = greedy_set_cover_delta_covering(cols, delta=0.5)
+        self.assertEqual(len(centers), 2)
+
+    def test_column_indices_reference_original_list(self):
+        model = self._make_model()
+        W = model.weight_matrices()[0]
+        cols = self._columns(W)
+        centers, indices = greedy_set_cover_delta_covering(cols, delta=2.0)
+        for center, idx in zip(centers, indices):
+            np.testing.assert_array_equal(center, cols[idx])
+
+    def test_all_24_deltas_produce_valid_coverings(self):
+        model = self._make_model()
+        W = model.weight_matrices()[0]
+        cols = self._columns(W)
+        for delta in np.arange(0.5, 12.5, 0.5):
+            centers, _ = greedy_set_cover_delta_covering(cols, delta)
+            self.assertTrue(
+                verify_delta_covering(cols, centers, delta),
+                f"Invalid covering at delta={delta:.1f}",
+            )
 
 
 if __name__ == "__main__":
