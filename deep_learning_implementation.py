@@ -313,3 +313,22 @@ if __name__ == "__main__":
     print("\nGradient matrix shapes (after last backward pass):")
     for i, dW in enumerate(model.gradient_matrices()):
         print(f"  Layer {i}: dW.shape={dW.shape}")
+
+    # ------------------------------------------------------------------
+    # Greedy set cover on weight matrices
+    # Each column of W is the weight vector for one output neuron.
+    # The covering size at a given delta measures how many distinct
+    # "prototype" directions are needed to represent all neurons.
+    # ------------------------------------------------------------------
+    from greedy_set_cover import greedy_set_cover_delta_covering, verify_delta_covering
+
+    print("\n--- Greedy set cover on weight-matrix columns ---")
+    print(f"{'Layer':<8} {'shape':<14} {'delta':<8} {'centers':<10} {'compression'}")
+    print("-" * 56)
+
+    for i, W in enumerate(model.weight_matrices()):
+        columns = [W[:, j] for j in range(W.shape[1])]
+        for delta in [0.5, 1.0, 2.0, 5.0]:
+            centers, _ = greedy_set_cover_delta_covering(columns, delta)
+            ratio = len(centers) / W.shape[1]
+            print(f"{i:<8} {str(W.shape):<14} {delta:<8.1f} {len(centers):<10} {ratio:.1%}")
