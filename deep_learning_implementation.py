@@ -267,38 +267,48 @@ def train(model: Sequential,
 
 
 # ---------------------------------------------------------------------------
-# Demo — XOR problem
+# Demo — large synthetic binary classification (100 000 obs, 100 features)
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
-    np.random.seed(0)
+    rng = np.random.default_rng(0)
 
-    X = np.array([[0, 0], [0, 1], [1, 0], [1, 1]], dtype=float)
-    y = np.array([0, 1, 1, 0])
+    N, F = 100_000, 100
+    X = rng.standard_normal((N, F))
+
+    # Ground-truth: label = sign of a sparse linear projection + nonlinearity
+    true_w = rng.standard_normal(F)
+    true_w[50:] = 0.0          # only first 50 features matter
+    y = (X @ true_w + rng.standard_normal(N) * 0.5 > 0).astype(int)
+
+    split = int(0.8 * N)
+    X_train, X_test = X[:split], X[split:]
+    y_train, y_test = y[:split], y[split:]
 
     model = Sequential([
-        Linear(2, 8, seed=42),
+        Linear(F, 256, seed=42),
         ReLU(),
-        Linear(8, 8, seed=43),
+        Linear(256, 128, seed=43),
         ReLU(),
-        Linear(8, 2, seed=44),
+        Linear(128, 64, seed=44),
+        ReLU(),
+        Linear(64, 2, seed=45),
     ])
 
     loss_fn = CrossEntropyLoss()
-    optimizer = Adam(lr=1e-2)
+    optimizer = Adam(lr=1e-3)
 
-    history = train(model, X, y, loss_fn, optimizer, epochs=500, batch_size=4, verbose=True)
+    history = train(model, X_train, y_train, loss_fn, optimizer,
+                    epochs=20, batch_size=256, verbose=True)
 
-    logits = model.forward(X)
+    logits = model.forward(X_test)
     preds = logits.argmax(axis=1)
-    print(f"\nPredictions: {preds}  (expected: {y})")
-    print(f"Accuracy: {(preds == y).mean():.0%}")
+    print(f"\nTest accuracy: {(preds == y_test).mean():.2%}  "
+          f"({N - split} held-out samples)")
 
     print("\nWeight matrix shapes (for matrix analysis):")
     for i, W in enumerate(model.weight_matrices()):
-
         print(f"  Layer {i}: W.shape={W.shape}")
-        print(f"Weight Matrix {W}")
 
     print("\nGradient matrix shapes (after last backward pass):")
     for i, dW in enumerate(model.gradient_matrices()):
