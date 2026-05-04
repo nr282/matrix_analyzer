@@ -35,3 +35,34 @@ One might ask what structure will this repository investigate?
     4. The application of (1),(2),(3) to backpropogation matricies.
 
 """
+
+import numpy as np
+from typing import List, Optional, Tuple, Set
+
+def project_matrix_to_circulant(A: np.array[np.array[int]]):
+    """
+    Projects matrix A to the nearest in 2 norm circulant matrix.
+
+    :param A:
+    :return:
+    """
+
+    pass
+
+def project_matrix_to_nearest_sparse(A: np.array[np.array[int]]):
+    pass
+
+
+def project_matrix_to_nearest_toeplitz(A: np.array[np.array[int]]):
+    pass
+
+def create_covering_for_matricies(matricies: List[np.array[np.array[float]]])):
+    """
+    The goal is to apply rigorously apply Wainwright's mathematics.
+
+    :return:
+    """
+
+    pass
+
+
